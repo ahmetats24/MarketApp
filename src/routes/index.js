@@ -1,14 +1,16 @@
-import * as React from 'react';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
 import Navigation from './Navigation';
-const Stack = createNativeStackNavigator();
+import { FavoriteProvider } from '../contexts/FavoriteContext';
 
-const MyStack = () => {
+const App = () => {
   return (
-    <NavigationContainer>
-      <Navigation />
-    </NavigationContainer>
+    <FavoriteProvider>
+      <NavigationContainer>
+        <Navigation />
+      </NavigationContainer>
+    </FavoriteProvider>
   );
 };
-export default MyStack;
+
+export default App;

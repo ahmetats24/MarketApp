@@ -24,9 +24,13 @@ export default styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: 'bold',
+    //backgroundColor:"red",
+    width:100,
+    height:60,
   },
   productPrice: {
     fontSize: 14,
     color: 'green',
+    marginTop:10
   },
 })

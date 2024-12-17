@@ -1,10 +1,12 @@
-import { View, Text, ActivityIndicator, FlatList, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, FlatList, Image, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import styles from './styles';
-import { kalp, kalpdolu } from '../../assets/icons';  // Dolu kalp simgesi
-import { migros, Misaş, a101, şok } from '../../assets/images'; // Market resimleri
+import { kalp, kalpdolu } from '../../assets/icons'; // Beğeni ikonları
+import { migros, Misaş, a101, şok } from '../../assets/images'; // Market logoları
+import { useFavorites } from '../../contexts/FavoriteContext'; // Beğeni durumu için Context
+import { useNavigation } from '@react-navigation/native'; // Navigasyon
 
-// Market logosu eşleşmesi
+// Market logoları eşleşmesi
 const marketLogos = {
   Misaş: Misaş,
   migros: migros,
@@ -12,15 +14,16 @@ const marketLogos = {
   şok: şok,
 };
 
-const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u eklendi
+const AburCubur = ({ marketName, productsLimit, horizontal, sayısı, solabosluk }) => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [likedProducts, setLikedProducts] = useState({});  // Beğenilen ürünleri takip et
-
+  const { likedProducts, toggleLike } = useFavorites(); // Context'ten beğeni durumu
+  const navigation = useNavigation();
+  
   useEffect(() => {
     fetchIcecek();
-  }, [marketName, productsLimit]);  // marketName veya productsLimit değiştiğinde veri çekilecek
+  }, [marketName, productsLimit]);
 
   const fetchIcecek = async () => {
     try {
@@ -35,24 +38,21 @@ const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u 
 
       // Market adına göre filtreleme
       const filteredByMarket = marketName
-        ? data.filter(item => item.market === marketName)  // Sadece belirli marketin ürünlerini al
-        : data; // Eğer marketName yoksa tüm verileri al
+        ? data.filter((item) => item.market === marketName || item.urun_adi.toLowerCase().includes(marketName.toLowerCase())) // marketName arama ile
+        : data;
 
-      // Rastgele sıralama
+      // Rastgele sıralama ve en düşük fiyatlı ürünleri bulma
       const shuffledProducts = shuffleArray(filteredByMarket);
-      // En düşük fiyatlı ürünleri filtrele
       const uniqueProducts = findLowestPricedProducts(shuffledProducts);
-      setFilteredProducts(uniqueProducts.slice(0, productsLimit)); // Ürün sayısını productsLimit'e göre sınırlıyoruz
+      setFilteredProducts(uniqueProducts.slice(0, productsLimit));
     } catch (error) {
       console.error('Hata oluştu:', error.message);
-      Alert.alert('Hata', 'Veri çekme işlemi sırasında bir hata oluştu. Lütfen tekrar deneyin.');
     } finally {
       setLoading(false);
     }
   };
 
   const shuffleArray = (array) => {
-    // Array'i rastgele sıralamak için Fisher-Yates algoritması
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [array[i], array[j]] = [array[j], array[i]];
@@ -73,13 +73,6 @@ const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u 
     return Object.values(productMap);
   };
 
-  const toggleLike = (urun_adi) => {
-    setLikedProducts((prevState) => ({
-      ...prevState,
-      [urun_adi]: !prevState[urun_adi], // Beğeni durumu tersine çevir
-    }));
-  };
-
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
@@ -88,9 +81,10 @@ const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u 
     <FlatList
       data={filteredProducts}
       keyExtractor={(item) => item.urun_adi}
-      horizontal={true}
+      horizontal={horizontal}
+      numColumns={sayısı}
       renderItem={({ item }) => (
-        <TouchableOpacity style={[styles.productCard, { height: 250, marginRight: 8, width: 150 }]}>
+        <TouchableOpacity onPress={() => navigation.navigate('HomePageDetails', { product: item })} style={[styles.productCard, { height: 250, marginRight: 8, width: 150, marginLeft: solabosluk }]}>
           <View style={{ position: 'relative' }}>
             {/* Market logosu sol üstte */}
             {marketLogos[item.market] && (
@@ -99,7 +93,7 @@ const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u 
                 style={{
                   width: 30,
                   height: 30,
-                  borderRadius: 15
+                  borderRadius: 15,
                 }}
               />
             )}
@@ -110,15 +104,15 @@ const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u 
                 top: 5,
                 zIndex: 1,
               }}
-              onPress={() => toggleLike(item.urun_adi)}
+              onPress={() => toggleLike(item)}
             >
               <Image
-                source={likedProducts[item.urun_adi] ? kalpdolu : kalp}
+                source={likedProducts.some((prod) => prod.urun_adi === item.urun_adi)
+                  ? kalpdolu
+                  : kalp}
                 style={{ width: 20, height: 20 }}
               />
             </TouchableOpacity>
-
-            {/* Ürün resmi */}
             <Image
               style={{ width: 100, height: 100, borderRadius: 10 }}
               source={{ uri: item.resim_linki }}
@@ -132,4 +126,4 @@ const DonukUrun = ({ marketName, productsLimit }) => {  // productsLimit prop'u 
   );
 };
 
-export default DonukUrun;
+export default AburCubur;

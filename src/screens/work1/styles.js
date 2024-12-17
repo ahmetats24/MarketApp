@@ -54,6 +54,64 @@ export default StyleSheet.create({
     marginBottom:windowWidth*0.02,
     fontSize:windowWidth*0.04,
     fontWeight:"600",
-    color:"black"
-  }
+    color:"black",
+    marginLeft:windowWidth*0.03,
+    alignItems:"center",
+    justifyContent:"center",
+  },
+  allsee:{
+    color: '#333333', // Yazı için sade bir gri
+    fontSize: 14, 
+    fontWeight: 'bold',
+  },
+  allseebutton:{
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF', // Beyaz arka plan
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, // Hafif gölge efekti
+    shadowOpacity: 0.1,
+    shadowRadius: 3, // Gölgeyi yay
+    elevation: 2, // Android gölgesi
+    marginRight:windowWidth*0.05
+  },
+  discountPanel: {
+    backgroundColor: '#F9F9F9',
+    padding: 10,
+    margin: 10,
+    borderRadius: 8,
+    marginBottom:80,
+  },
+  discountPanelTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  discountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  discountImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+  },
+  discountInfo: {
+    marginLeft: 10,
+  },
+  discountName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  discountPrice: {
+    fontSize: 12,
+    color: 'green',
+  },
+  discountPercentage: {
+    fontSize: 12,
+    color: 'red',
+  },
 })

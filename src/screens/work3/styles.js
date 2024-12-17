@@ -19,7 +19,7 @@ export default styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     backgroundColor: '#f9f9f9',
-    width:150,
+    width:150
   },
   productName: {
     fontSize: 16,

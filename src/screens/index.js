@@ -5,6 +5,11 @@ import Misaş from "./work4/Misaş";
 import A101 from "./work6/A101";
 import Migros from "./work5/Migros";
 import Sok from "./work7/Sok";
-
-
-export {HomePage, SearchPage, LikePages, Misaş, A101, Migros, Sok};
+import AburcuburAll from './work9/AburcuburAll';
+import IcecekAll from './work10/IcecekAll';
+import DonukurunAll from './work11/DonukurunAll';
+import EtbalıkAll from './work12/EtbalikAll';
+import Page1 from './work14/Page1';
+import Page2 from './work13/Page2';
+import HomePageDetails from './work15/HomePageDetail';
+export {HomePage, SearchPage, LikePages, Misaş, A101, Migros, Sok, AburcuburAll, IcecekAll, EtbalıkAll, DonukurunAll,Page1,Page2,HomePageDetails};

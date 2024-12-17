@@ -1,108 +1,125 @@
-import { View, Text, ActivityIndicator, FlatList, TouchableOpacity, Image } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage'ı import et
+import styles from './styles';
+import { kalp, kalpdolu } from '../../assets/icons'; // Beğeni ikonları
+import { migros, Misaş, a101, şok } from '../../assets/images'; // Market logoları
 import BottomTabs from '../../components/BottomTabs/BottomTabs';
-import AburCubur from '../../components/AburCubur/AburCubur';
-import DonukUrun from '../../components/DonukUrun/DonukUrun';
-import { kalp, kalpdolu } from '../../assets/icons';
-const likePages = () => {
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [likedProducts, setLikedProducts] = useState({});  // Beğenilen ürünleri takip et
+import { useNavigation } from '@react-navigation/native'; // Navigasyon
+
+// Market logoları eşleşmesi
+const marketLogos = {
+  Misaş: Misaş,
+  migros: migros,
+  a101: a101,
+  şok: şok,
+};
+
+const LikePages = () => {
+  const [likedProducts, setLikedProducts] = useState([]);  // Beğenilen ürünler için state
+  const navigation = useNavigation();
 
   useEffect(() => {
-    fetchAburCubur();
+    // Uygulama açıldığında AsyncStorage'dan beğenilen ürünleri yükle
+    loadLikedProducts();
   }, []);
 
-  const fetchAburCubur = async () => {
+  const loadLikedProducts = async () => {
     try {
-      console.log('Veri çekme işlemi başlıyor...');
-      const response = await fetch('http://192.168.1.119:5001/icecek');
-      if (!response.ok) {
-        throw new Error(`Sunucu hatası: ${response.status}`);
+      // AsyncStorage'dan verileri al
+      const savedLikes = await AsyncStorage.getItem('likedProducts');
+      if (savedLikes) {
+        // Verileri alıp state'e aktar
+        setLikedProducts(JSON.parse(savedLikes));
       }
-      const data = await response.json();
-      console.log('Tüm Veriler:', data);
-      setProducts(data);
-
-      // En düşük fiyatlı ürünleri filtrele
-      const uniqueProducts = findLowestPricedProducts(data);
-      setFilteredProducts(uniqueProducts.slice(0, 3)); // Sadece ilk 10 ürünü göster
     } catch (error) {
-      console.error('Hata oluştu:', error.message);
-    } finally {
-      setLoading(false);
+      console.error('Beğenilen ürünler yüklenemedi:', error);
     }
   };
 
-  const findLowestPricedProducts = (products) => {
-    const productMap = {};
-    products.forEach((product) => {
-      const { urun_adi, urun_fiyati, market, resim_linki } = product;
-      const price = parseFloat(urun_fiyati.replace(',', '.'));
+  const toggleLike = async (product) => {
+    const updatedLikes = [...likedProducts];
+    const productIndex = updatedLikes.findIndex(item => item.urun_adi === product.urun_adi);
 
-      if (!productMap[urun_adi] || productMap[urun_adi].price > price) {
-        productMap[urun_adi] = { urun_adi, urun_fiyati, market, resim_linki, price };
-      }
-    });
-    return Object.values(productMap);
+    if (productIndex > -1) {
+      // Ürün zaten beğenilmiş, o zaman beğeniyi kaldır
+      updatedLikes.splice(productIndex, 1);
+    } else {
+      // Ürün henüz beğenilmemiş, beğeniyi ekle
+      updatedLikes.push(product);
+    }
+
+    // Yeni beğenilen ürünleri AsyncStorage'a kaydet
+    try {
+      await AsyncStorage.setItem('likedProducts', JSON.stringify(updatedLikes));
+      setLikedProducts(updatedLikes);  // State'i güncelle
+    } catch (error) {
+      console.error('Beğenilen ürünler kaydedilemedi:', error);
+    }
   };
 
-  const toggleLike = (urun_adi) => {
-    setLikedProducts((prevState) => ({
-      ...prevState,
-      [urun_adi]: !prevState[urun_adi], // Beğeni durumu tersine çevir
-    }));
-  };
-
-  if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+  if (likedProducts.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>Henüz beğenilen bir ürün yok!</Text>
+      </View>
+    );
   }
 
   return (
     <View style={{flex:1}}>
-      <View style={{alignItems:"center",marginTop:50}}>
-        <Text style={{fontSize:24,fontWeight:"600",color:"black"}}>Beğendiklerim</Text>
-      </View>
-      <FlatList
-      data={filteredProducts}
-      numColumns={2}
-      keyExtractor={(item) => item.urun_adi}
-      renderItem={({ item }) => (
-        <TouchableOpacity style={[styles.productCard, { height: 250, marginRight: 8, width: 150, marginTop:25,marginLeft:25 }]}>
-          <View style={{ position: 'relative' }}>
-            {/* Beğeni simgesi */}
-            <TouchableOpacity
-              style={{
-                right: 5,
-                zIndex: 1, 
-                marginLeft:100,
-                bottom:5
-              }}
-              onPress={() => toggleLike(item.urun_adi)}
-            >
-              <Image
-                source={likedProducts[item.urun_adi] ? kalpdolu : kalp}
-                style={{ width: 20, height: 20 }}
-              />
+        <FlatList
+        style={{marginBottom:75}}
+        data={likedProducts}
+        keyExtractor={(item) => item.urun_adi}
+        numColumns={2} 
+        renderItem={({ item }) => (
+            <TouchableOpacity onPress={() => navigation.navigate('HomePageDetails', { product: item })} style={[styles.productCard, { height: 250, margin: 8, width: 150,marginLeft:35}]}>
+            <View style={{ position: 'relative' }}>
+                
+                {marketLogos[item.market] && (
+                <Image
+                    source={marketLogos[item.market]}
+                    style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    }}
+                />
+                )}
+                {/* Beğeni butonu */}
+                <TouchableOpacity
+                style={{
+                    position: 'absolute',
+                    right: 5,
+                    top: 5,
+                    zIndex: 1,
+                }}
+                onPress={() => toggleLike(item)} // Beğeniyi tersine çevir
+                >
+                <Image
+                    source={kalpdolu} // Beğenilen sayfası olduğu için dolu kalp göster
+                    style={{ width: 20, height: 20 }}
+                />
+                </TouchableOpacity>
+
+                {/* Ürün resmi */}
+                <Image
+                style={{ width: 100, height: 100, borderRadius: 10 }}
+                source={{ uri: item.resim_linki }}
+                />
+            </View>
+            <Text style={styles.productName}>{item.urun_adi}</Text>
+            <Text style={styles.productPrice}>{item.urun_fiyati}</Text>
             </TouchableOpacity>
-            <Image style={{ width: 100, height: 100, borderRadius: 10 }} source={{ uri: item.resim_linki }} />
-          </View>
-          <Text style={styles.productName}>{item.urun_adi}</Text>
-          <Text style={styles.productPrice}>{item.urun_fiyati} TL</Text>
-        </TouchableOpacity>
-      )}
-    />
-
-
-
-
-
-      <View style={{position:"absolute", bottom:0}}>
-        <BottomTabs/>
-      </View>
+        )}
+        />
+        <View style={{ position: 'absolute', bottom:0,marginTop:100}}>
+            <BottomTabs />
+        </View>
     </View>
-  )
-}
+    
+  );
+};
 
-export default likePages
+export default LikePages;

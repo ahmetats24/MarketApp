@@ -1,44 +1,45 @@
+import { View, Text, ActivityIndicator, FlatList, Image, TouchableOpacity, TextInput } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  StyleSheet,
-  ActivityIndicator,
-  TextInput,
-} from 'react-native';
+import styles from './styles'; // Daha önce verdiğiniz stil dosyası
+import { kalp, kalpdolu } from '../../assets/icons'; // Beğeni ikonları
+import { migros, Misaş, a101, şok } from '../../assets/images'; // Market logoları
+import { useFavorites } from '../../contexts/FavoriteContext'; // Beğeni durumu için Context
+import { useNavigation } from '@react-navigation/native'; // Navigasyon
+import BottomTabs from '../../components/BottomTabs/BottomTabs';
 
-const Icecek = () => {
-  const [drinks, setDrinks] = useState([]); // Tüm içecek verileri
-  const [filteredDrinks, setFilteredDrinks] = useState([]); // Filtrelenmiş içecek verileri
+// Market logoları eşleşmesi
+const marketLogos = {
+  Misaş: Misaş,
+  migros: migros,
+  a101: a101,
+  şok: şok,
+};
+
+const AramaSayfasi = () => {
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(''); // Arama çubuğu girdisi
+  const [searchQuery, setSearchQuery] = useState('');
+  const { likedProducts, toggleLike } = useFavorites(); // Context'ten beğeni durumu
+  const navigation = useNavigation();
 
+  // Veri çekme işlemi
   useEffect(() => {
-    fetchDrinks();
+    fetchProducts();
   }, []);
 
-  useEffect(() => {
-    // Arama terimine göre içecekleri filtrele
-    const filtered = drinks.filter((item) =>
-      item.urun_adi.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredDrinks(filtered);
-  }, [searchTerm, drinks]);
-
-  const fetchDrinks = async () => {
+  // Ürünleri API'den çekme
+  const fetchProducts = async () => {
     try {
-      const response = await fetch('http://10.192.112.212:5001/icecek');
+      console.log('Veri çekme işlemi başlıyor...');
+      const response = await fetch('http://10.192.112.212:5001/tum_urunler');
       if (!response.ok) {
         throw new Error(`Sunucu hatası: ${response.status}`);
       }
       const data = await response.json();
-
-      // Benzersiz ürünleri filtrele
-      const uniqueDrinks = removeDuplicates(data, 'urun_adi');
-      setDrinks(uniqueDrinks); // Benzersiz ürünleri kaydet
-      setFilteredDrinks(uniqueDrinks); // Başlangıçta tüm benzersiz ürünleri göster
+      console.log('Tüm Veriler:', data);
+      setProducts(data);
+      setFilteredProducts(data); // İlk başta tüm ürünleri göster
     } catch (error) {
       console.error('Hata oluştu:', error.message);
     } finally {
@@ -46,96 +47,86 @@ const Icecek = () => {
     }
   };
 
-  // Benzersiz ürünleri filtrelemek için yardımcı fonksiyon
-  const removeDuplicates = (data, key) => {
-    const seen = new Set();
-    return data.filter((item) => {
-      const value = item[key];
-      if (seen.has(value)) {
-        return false; // Daha önce göründüyse çıkar
-      }
-      seen.add(value);
-      return true; // İlk kez göründüyse ekle
-    });
+  // Arama işlemi
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    const filtered = products.filter((item) =>
+      item.urun_adi.toLowerCase().includes(text.toLowerCase())
+    );
+    setFilteredProducts(filtered);
   };
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
+    return <ActivityIndicator size="large" color="#0000ff" />;
   }
 
   return (
     <View style={styles.container}>
       {/* Arama Çubuğu */}
       <TextInput
-        style={styles.searchInput}
+        style={[styles.productCard, { marginBottom: 16, padding: 10 }]} // Arama çubuğu için stil
         placeholder="Ürün ara..."
-        value={searchTerm}
-        onChangeText={(text) => setSearchTerm(text)} // Arama terimini güncelle
+        value={searchQuery}
+        onChangeText={handleSearch}
       />
+
+      {/* Ürün Listesi */}
       <FlatList
-        data={filteredDrinks}
+        data={filteredProducts}
+        numColumns={2}
         keyExtractor={(item) => item.urun_adi}
-        numColumns={2} // İki sütunlu düzen
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Image source={{ uri: item.resim_linki }} style={styles.image} />
-            <Text style={styles.name}>{item.urun_adi}</Text>
-            <Text style={styles.price}>{item.urun_fiyati} TL</Text>
-          </View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('HomePageDetails', { product: item })}
+            style={[styles.productCard, { height: 250, marginRight: 8, width: 150,marginLeft:25 }]}
+          >
+            <View style={{ position: 'relative' }}>
+              {/* Market logosu sol üstte */}
+              {marketLogos[item.market] && (
+                <Image
+                  source={marketLogos[item.market]}
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 15,
+                    position: 'absolute',
+                    top: 5,
+                    left: 5,
+                    zIndex: 1,
+                  }}
+                />
+              )}
+              <TouchableOpacity
+                style={{
+                  position: 'absolute',
+                  right: 5,
+                  top: 5,
+                  zIndex: 1,
+                }}
+                onPress={() => toggleLike(item)}
+              >
+                <Image
+                  source={likedProducts.some((prod) => prod.urun_adi === item.urun_adi)
+                    ? kalpdolu
+                    : kalp}
+                  style={{ width: 20, height: 20 }}
+                />
+              </TouchableOpacity>
+              <Image
+                style={{ width: 100, height: 100, borderRadius: 10 }}
+                source={{ uri: item.resim_linki }}
+              />
+            </View>
+            <Text style={styles.productName}>{item.urun_adi}</Text>
+            <Text style={styles.productPrice}>{item.urun_fiyati}</Text>
+          </TouchableOpacity>
         )}
       />
+      <View style={{ position: 'absolute', bottom: 0, width: '100%' }}>
+        <BottomTabs />
+      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-  },
-  searchInput: {
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  card: {
-    flex: 1,
-    margin: 8,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
-    alignItems: 'center',
-    elevation: 3,
-  },
-  image: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-  },
-  price: {
-    fontSize: 14,
-    color: '#666',
-  },
-});
-
-export default Icecek;
+export default AramaSayfasi;
